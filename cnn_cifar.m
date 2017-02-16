@@ -3,8 +3,7 @@ function [net, info] = cnn_cifar(varargin)
 %    The demo includes two standard model: LeNet and Network in
 %    Network (NIN). Use the 'modelType' option to choose one.
 
-run(fullfile(fileparts(mfilename('fullpath')), ...
-  '..', '..', 'matlab', 'vl_setupnn.m')) ;
+
 
 opts.modelType = 'lenet' ;
 [opts, varargin] = vl_argparse(opts, varargin) ;
@@ -12,7 +11,7 @@ opts.modelType = 'lenet' ;
 opts.expDir = fullfile(vl_rootnn, 'data', ...
   sprintf('cifar-%s', opts.modelType)) ;
 [opts, varargin] = vl_argparse(opts, varargin) ;
-
+opts.continue = false;
 opts.dataDir = fullfile(vl_rootnn, 'data','cifar') ;
 opts.imdbPath = fullfile(opts.expDir, 'imdb.mat');
 opts.whitenData = true ;
@@ -58,7 +57,7 @@ end
   'expDir', opts.expDir, ...
   net.meta.trainOpts, ...
   opts.train, ...
-  'val', find(imdb.images.set == 3)) ;
+  'val', find(imdb.images.set == 3),'continue',opts.continue) ;
 
 % -------------------------------------------------------------------------
 function fn = getBatch(opts)
