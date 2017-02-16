@@ -494,9 +494,7 @@ if doder
           'epsilon', l.epsilon, ...
           'aggregate', l.aggregate, ...
           'instanceWeights', l.instanceWeights) ;
-      %% MY channels backward
-      case 'birelu'
-                res(i).dzdx = em_nnbirelu(res(i).x,res(i+1).dzdx);
+
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
 
