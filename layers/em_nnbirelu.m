@@ -3,10 +3,10 @@ function [ y_dzdx,aux ] = em_nnbirelu(x,dzdy,aux )
 %   Detailed explanation goes here
 isStoch = false;
 chSize = size(x,3);
-secondImp = true;
-if secondImp
+Scatter = true;
+if Scatter
 negInds = 2:2:2*chSize;
-posInds = 2:2:2*chSize -1;
+posInds = 1:2:2*chSize -1;
 end
 
 if nargin<2
@@ -16,9 +16,17 @@ if nargin<2
     aux = probs;
     y_dzdx= cat(3,x.*probs,x.*(~probs));
     else
+        if Scatter
+            xcat = cat(3,x,x);
+            xcat(:,:,posInds,:) = x;
+            xcat(:,:,negInds,:) = -x;
+            y_dzdx = vl_nnrelu(xcat);
+            aux = [];
+        else
         xcat = cat(3,x,-x);
         y_dzdx = vl_nnrelu(xcat);
         aux = [];
+        end
     end
 else
     %regCheck(dzdy)
@@ -27,9 +35,15 @@ else
     y_dzdx = dzdy .*activeAll;
     y_dzdx = dzdy(:,:,1:end/2,:)+ y_dzdx(:,:,(end/2)+1:end,:);
     else
-    xcat = cat(3,x,-x);
-    y_dzdx = vl_nnrelu(xcat,dzdy);
-    y_dzdx = y_dzdx(:,:,1:end/2,:) - y_dzdx(:,:,(end/2)+1:end,:);
+        if Scatter
+            dydxpos = vl_nnrelu(x,dzdy(:,:,posInds,:));
+            dydxneg = vl_nnrelu(x,dzdy(:,:,negInds,:));
+            y_dzdx = dydxpos - dydxneg;
+        else
+            xcat = cat(3,x,-x);
+            y_dzdx = vl_nnrelu(xcat,dzdy);
+            y_dzdx = y_dzdx(:,:,1:end/2,:) - y_dzdx(:,:,(end/2)+1:end,:);
+        end
     end
     
 end

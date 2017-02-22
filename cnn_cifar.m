@@ -5,7 +5,7 @@ function [net, info] = cnn_cifar(varargin)
 
 
 
-opts.modelType = 'nin' ;
+opts.modelType = 'lenet' ;
 [opts, varargin] = vl_argparse(opts, varargin) ;
 
 opts.expDir = fullfile(vl_rootnn, 'data', ...
