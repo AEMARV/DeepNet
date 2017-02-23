@@ -1,15 +1,16 @@
-function [ y_dzdx,aux ] = em_nnbirelu(x,dzdy,aux )
+function [ y_dzdx,aux ] = em_nnbirelu(layer,x,dzdy,aux )
 %EM_NNBIRELU Summary of this function goes here
 %   Detailed explanation goes here
 isStoch = false;
 chSize = size(x,3);
-Scatter = true;
+Scatter = layer.scatter;
+%block = layer.block;
 if Scatter
-negInds = 2:2:2*chSize;
-posInds = 1:2:2*chSize -1;
+negInds = blockScatterInd(layer.block,1,chSize);
+posInds = blockScatterInd(layer.block,0,chSize);
 end
 
-if nargin<2
+if nargin<3
     %regCheck(x);
     if isStoch
     probs = sampler(vl_nnsigmoid(x));
@@ -37,7 +38,7 @@ else
     else
         if Scatter
             dydxpos = vl_nnrelu(x,dzdy(:,:,posInds,:));
-            dydxneg = vl_nnrelu(x,dzdy(:,:,negInds,:));
+            dydxneg = vl_nnrelu(-x,dzdy(:,:,negInds,:));
             y_dzdx = dydxpos - dydxneg;
         else
             xcat = cat(3,x,-x);
@@ -58,5 +59,10 @@ end
 if ~isempty(find(isinf(x), 1))
     error('has inf');
 end
+
+end
+
+function y = catInterLeaved(x,block,Size)
+y = cat(3,x,x);
 
 end

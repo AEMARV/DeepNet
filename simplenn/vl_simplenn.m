@@ -372,8 +372,9 @@ for i=1:n
 
     %% My Layers
     case 'birelu'
-      [res(i+1).x,res(i).aux] = em_nnbirelu(res(i).x);
-    
+      [res(i+1).x,res(i).aux] = em_nnbirelu(l,res(i).x);
+      case 'avr'
+          [res(i+1).x] = em_avr(res(i).x);
       
       
       
@@ -498,7 +499,9 @@ if doder
           'instanceWeights', l.instanceWeights) ;
       %% MY channels backward
       case 'birelu'
-        res(i).dzdx = em_nnbirelu(res(i).x,res(i+1).dzdx,res(i).aux);
+        res(i).dzdx = em_nnbirelu(l,res(i).x,res(i+1).dzdx,res(i).aux);
+      case 'avr'
+        res(i).dzdx = em_avr(res(i).x,res(i+1).dzdx);
         
         
         
