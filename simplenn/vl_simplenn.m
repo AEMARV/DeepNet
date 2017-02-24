@@ -330,6 +330,9 @@ for i=1:n
 
     case 'softmaxloss'
       res(i+1).x = vl_nnsoftmaxloss(res(i).x, l.class) ;
+      %% my loss
+    case 'revloss'
+      res(i+1).x = em_nnloss(res(i).x, l.class,[]) ;
 
     case 'relu'
       if l.leak > 0, leak = {'leak', l.leak} ; else leak = {} ; end
@@ -441,7 +444,8 @@ if doder
 
       case 'loss'
         res(i).dzdx = vl_nnloss(res(i).x, l.class, res(i+1).dzdx) ;
-
+      case 'revloss'
+        [res(i).dzdx,res(i+1).aux] = em_nnloss(res(i).x, l.class,res(i+1).aux, res(i+1).dzdx) ;
       case 'softmaxloss'
         res(i).dzdx = vl_nnsoftmaxloss(res(i).x, l.class, res(i+1).dzdx) ;
 
