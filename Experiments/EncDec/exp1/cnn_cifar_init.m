@@ -1,65 +1,54 @@
-function net = cnn_cifar_init(decArr,encArr,varargin) 
+function net = cnn_cifar_init(varargin) 
 opts.networkType = 'simplenn' ; 
 opts = vl_argparse(opts, varargin) ; 
-if isempty(decArr)
-decArr = [2,2,2,2,2,2,0]; 
-encArr = [-inf,0,-inf,0,-inf,0,-inf];
-end
+ 
 lr = [.1 2] ; 
 k =1;
-Initial = @eyeconv;
 % Define network CIFAR10-quick 
 net.layers = {} ; 
 FiltNum = 32; 
 blockNum = 1;
 block = k*32;
-decrec = 3;
-encrec = 1;
 % Block 1 
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{Initial(5,5,3,block, 'single'), zeros(1, block, 'single')}}, ... 
+                           'weights', {{0.01*randn(5,5,3,block, 'single'), zeros(1, block, 'single')}}, ... 
                            'learningRate', lr, ... 
                            'stride', 1, ... 
-                           'blocks', 1, ...
                            'pad', 2) ; 
 net.layers{end+1} = struct('type', 'birelu','scatter',false) ;
 blockNum =2;
-dec = decArr(1);
-enc = encArr(1);
-%% Auto 1
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,decrec,encrec);
-%%
+dec = 0;
+enc = 2;
+[net,blockNum] = addAutoEnc(net,dec,enc,block,lr,blockNum);
+
 net.layers{end+1} = struct('type', 'pool', ... 
                            'method', 'avg', ... 
                            'pool', [3 3], ... 
                            'stride', 2, ... 
                            'pad', [0 1 0 1]) ; 
-dec = decArr(2);
-enc =encArr(2);
-%% Auto 2
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,decrec,encrec);
-%%
-NewBlockSize = 64*k;
+
+NewBlockSize = 32*k;
 
 % Block 2 
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{Initial(5,5,block,NewBlockSize*blockNum, 'single'), zeros(1,NewBlockSize*blockNum,'single')}}, ... 
+                           'weights', {{0.05*randn(5,5,block,NewBlockSize*blockNum, 'single'), zeros(1,NewBlockSize*blockNum,'single')}}, ... 
                            'learningRate', lr, ... 
                            'stride', 1, ... 
-                           'blocks', blockNum, ...
                            'pad', 2) ; 
                        
 block = NewBlockSize;
 net.layers{end+1} = struct('type', 'birelu','block',block,'scatter',true) ; 
 blockNum = blockNum *2;
 
-dec = decArr(3);
-enc = encArr(3);
+dec = 0;
+enc = 2;
 
-%% Auto 3
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,decrec,encrec);
-%%
 
+[net,blockNum] = addAutoEnc(net,dec,enc,block,lr,blockNum);
+dec = 2;
+enc = 0;
+
+[net,blockNum] = addAutoEnc(net,dec,enc,block,lr,blockNum);
 
 
 net.layers{end+1} = struct('type', 'pool', ... 
@@ -67,70 +56,54 @@ net.layers{end+1} = struct('type', 'pool', ...
                            'pool', [3 3], ... 
                            'stride', 2, ... 
                            'pad', [0 1 0 1]) ; % Emulate caffe 
- dec = decArr(4);
-enc = encArr(4);
-%% Auto 4
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,decrec,encrec);
-%%
+ 
 % Block 3 
 NewBlockSize = 64*k;
 
-<<<<<<< HEAD
-% Loss layer
-net.layers{end+1} = struct('type', 'revloss') ;
-=======
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{Initial(5,5,block,blockNum*NewBlockSize, 'single'), zeros(1,blockNum*NewBlockSize,'single')}}, ... 
+                           'weights', {{0.05*randn(5,5,block,blockNum*NewBlockSize, 'single'), zeros(1,blockNum*NewBlockSize,'single')}}, ... 
                            'learningRate', lr, ... 
                            'stride', 1, ... 
-                           'blocks', blockNum, ...
                            'pad', 2) ; 
                        
 block = NewBlockSize;
 net.layers{end+1} = struct('type', 'birelu','block',block,'scatter',true) ;
 blockNum = blockNum *2;
->>>>>>> BRelu
 
-dec = decArr(5);
-enc = encArr(5);
+dec = 0;
+enc = -inf;
 
-%% Auto 5
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,decrec,encrec);
-%%
+
+[net,blockNum] = addAutoEnc(net,dec,enc,block,lr,blockNum);
+dec = 3;
+enc = 0;
+
+[net,blockNum] = addAutoEnc(net,dec,enc,block,lr,blockNum);
 
 net.layers{end+1} = struct('type', 'pool', ... 
                            'method', 'avg', ... 
                            'pool', [3 3], ... 
                            'stride', 2, ... 
                            'pad', [0 1 0 1]) ; % Emulate caffe 
-dec = decArr(6);
-enc = encArr(6);
-%% Auto 6
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,decrec,encrec);                       
- %%
+ 
 % Block 4 
 NewBlockSize =64*k;
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{Initial(4,4,block,NewBlockSize*blockNum, 'single'), zeros(1,NewBlockSize*blockNum,'single')}}, ... 
+                           'weights', {{0.05*randn(4,4,block,NewBlockSize*blockNum, 'single'), zeros(1,NewBlockSize*blockNum,'single')}}, ... 
                            'learningRate', lr, ... 
                            'stride', 1, ... 
-                           'blocks', blockNum, ...
                            'pad', 0) ; 
 block = NewBlockSize;
 net.layers{end+1} = struct('type', 'birelu','block',block,'scatter',true) ; 
 blockNum = blockNum *2;
-dec = decArr(7);
-enc =encArr(7);
-
-%% Auto 7
-[net,blockNum,block] = addAutoEnc(net,dec,enc,block,lr,blockNum,1,1);
-%%
+dec = 2;
+enc = -inf;
+[net,blockNum] = addAutoEnc(net,dec,enc,block,lr,blockNum);
 % Block 5 
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{Initial(1,1,block*blockNum,10, 'single'), zeros(1,10,'single')}}, ... 
+                           'weights', {{0.05*randn(1,1,block*blockNum,10, 'single'), zeros(1,10,'single')}}, ... 
                            'learningRate', .1*lr, ... 
                            'stride', 1, ... 
-                           'blocks', blockNum, ...
                            'pad', 0) ; 
 %net.layers{end+1} = struct('type', 'avr') ; 
  

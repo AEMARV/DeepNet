@@ -75,10 +75,6 @@ enc = encArr(4);
 % Block 3 
 NewBlockSize = 64*k;
 
-<<<<<<< HEAD
-% Loss layer
-net.layers{end+1} = struct('type', 'revloss') ;
-=======
 net.layers{end+1} = struct('type', 'conv', ... 
                            'weights', {{Initial(5,5,block,blockNum*NewBlockSize, 'single'), zeros(1,blockNum*NewBlockSize,'single')}}, ... 
                            'learningRate', lr, ... 
@@ -89,7 +85,6 @@ net.layers{end+1} = struct('type', 'conv', ...
 block = NewBlockSize;
 net.layers{end+1} = struct('type', 'birelu','block',block,'scatter',true) ;
 blockNum = blockNum *2;
->>>>>>> BRelu
 
 dec = decArr(5);
 enc = encArr(5);

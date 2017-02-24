@@ -373,6 +373,14 @@ for i=1:n
         'aggregate', l.aggregate, ...
         'instanceWeights', l.instanceWeights) ;
 
+    %% My Layers
+    case 'birelu'
+      [res(i+1).x,res(i).aux] = em_nnbirelu(l,res(i).x);
+      case 'avr'
+          [res(i+1).x] = em_avr(res(i).x);
+      
+      
+      
     case 'custom'
       res(i+1) = l.forward(l, res(i), res(i+1)) ;
 
@@ -493,7 +501,14 @@ if doder
           'epsilon', l.epsilon, ...
           'aggregate', l.aggregate, ...
           'instanceWeights', l.instanceWeights) ;
-
+      %% MY channels backward
+      case 'birelu'
+        res(i).dzdx = em_nnbirelu(l,res(i).x,res(i+1).dzdx,res(i).aux);
+      case 'avr'
+        res(i).dzdx = em_avr(res(i).x,res(i+1).dzdx);
+        
+        
+        
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
 

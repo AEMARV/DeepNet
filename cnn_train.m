@@ -37,13 +37,13 @@ opts.profile = false ;
 opts.parameterServer.method = 'mmap' ;
 opts.parameterServer.prefix = 'mcn' ;
 
-opts.conserveMemory = true ;
+opts.conserveMemory = false ;
 opts.backPropDepth = +inf ;
 opts.sync = false ;
 opts.cudnn = true ;
 opts.errorFunction = 'multiclass' ;
 opts.errorLabels = {} ;
-opts.plotDiagnostics = false ;
+opts.plotDiagnostics =false ;
 opts.plotStatistics = true;
 opts = vl_argparse(opts, varargin) ;
 
