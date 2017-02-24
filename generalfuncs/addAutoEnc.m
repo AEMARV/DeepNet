@@ -1,25 +1,40 @@
-function [ net,currentBlockNum ] = addAutoEnc( net,decode,encode,block,lr,currentBlockNum )
+function [ net,currentBlockNum,block ] = addAutoEnc( net,decode,encode,block,lr,currentBlockNum,decrec,encrec )
 % Outputs 2^(dec+1-enc)/d^enc blocks. Input should be 2 blocks. 
+resBlock = false;
 for i = 1 : decode
+    if resBlock
+        newBlock = block/2;
+    else
+        newBlock = block;
+    end
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{.1*randn(1,1,block,block*currentBlockNum, 'single'), zeros(1, block*currentBlockNum, 'single')}}, ... 
+                           'weights', {{eyeconv(decrec,decrec,block,newBlock*currentBlockNum, 'single'), zeros(1, newBlock*currentBlockNum, 'single')}}, ... 
                            'learningRate', lr, ... 
                            'stride', 1, ... 
-                           'pad', 0) ; 
-net.layers{end+1} = struct('type', 'birelu','block',block,'scatter',true) ;
+                           'blocks', currentBlockNum, ...
+                           'pad', floor(decrec/2)) ; 
+net.layers{end+1} = struct('type', 'birelu','block',newBlock,'scatter',true) ;
 currentBlockNum = currentBlockNum*2;
+block = newBlock;
 end
-level = decode+1;
-if isinf(encode)
+
+if isinf(encode) || encode > floor(log2(currentBlockNum))
     encode = floor(log2(currentBlockNum));
 end
 for i = 1 :1: encode
+    if resBlock
+    NewBlock = block *2;
+    else
+        NewBlock = block;
+    end
 net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{.1*randn(1,1,2*block,block*currentBlockNum/2, 'single'), zeros(1,block*currentBlockNum/2, 'single')}}, ... 
+                           'weights', {{eyeconv(1,1,2*block,NewBlock*currentBlockNum/2, 'single'), zeros(1,NewBlock*currentBlockNum/2, 'single')}}, ... 
                            'learningRate', lr, ... 
                            'stride', 1, ... 
-                           'pad', 0) ; 
-net.layers{end+1} = struct('type', 'avr') ;
+                           'blocks', currentBlockNum/2, ...
+                           'pad', floor(encrec/2)) ; 
+     block = NewBlock;
+net.layers{end+1} = struct('type', 'relu') ;
 currentBlockNum = currentBlockNum/2;
 if currentBlockNum<1
     error('shit')
