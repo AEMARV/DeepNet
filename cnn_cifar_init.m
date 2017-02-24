@@ -62,7 +62,7 @@ net.layers{end+1} = struct('type', 'conv', ...
                            'pad', 0) ;
 
 % Loss layer
-net.layers{end+1} = struct('type', 'softmaxloss') ;
+net.layers{end+1} = struct('type', 'revloss') ;
 
 % Meta parameters
 net.meta.inputSize = [32 32 3] ;
