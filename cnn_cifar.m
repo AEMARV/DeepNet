@@ -1,4 +1,4 @@
-function [net, info] = cnn_cifar(decArr,encArr,varargin)
+function [net, info] = cnn_cifar(varargin)
 % CNN_CIFAR   Demonstrates MatConvNet on CIFAR-10
 %    The demo includes two standard model: LeNet and Network in
 %    Network (NIN). Use the 'modelType' option to choose one.
@@ -27,7 +27,7 @@ if ~isfield(opts.train, 'gpus'), opts.train.gpus = []; end;
 
 switch opts.modelType
   case 'lenet'
-    net = cnn_cifar_init(decArr,encArr,'networkType', opts.networkType) ;
+    net = cnn_cifar_init('networkType', opts.networkType) ;
   case 'nin'
     net = cnn_cifar_init_nin('networkType', opts.networkType) ;
   otherwise

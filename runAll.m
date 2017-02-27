@@ -10,7 +10,7 @@ expdir = ['./results/exp',int2str(i)];
 if ~exist(expdir) || i ==0
 unix(['mkdir ' ,expdir]);
 unix(['cp cnn_cifar_init.m ./results/exp',int2str(i),'/']);
-cnn_cifar(decArr,encArr,'train',struct('gpus',1),'expDir','./results','continue',cont);
+cnn_cifar('train',struct('gpus',1),'expDir','./results','continue',cont);
 unix(['cp ./results/net*.mat ',expdir]);
 unix(['cp ./results/net-train.pdf ',expdir]);
 else

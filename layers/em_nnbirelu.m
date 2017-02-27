@@ -3,7 +3,11 @@ function [ y_dzdx,aux ] = em_nnbirelu(layer,x,dzdy,aux )
 %   Detailed explanation goes here
 isStoch = false;
 chSize = size(x,3);
+if isfield(layer,'scatter')
 Scatter = layer.scatter;
+else
+    Scatter = false;
+end
 %block = layer.block;
 if Scatter
 negInds = blockScatterInd(layer.block,1,chSize);

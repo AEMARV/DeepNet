@@ -24,6 +24,8 @@ function [y,percentErr] = em_nnloss(x,c,prevpercent,dzdy)
 
 % work around a bug in MATLAB, where native cast() would slow
 % progressively
+isDistLabel = false;
+doder = nargin>3;
 if isa(x, 'gpuArray')
   switch classUnderlying(x) ;
     case 'single', cast = @(z) single(z) ;
@@ -38,13 +40,17 @@ end
 
 %X = X + 1e-6 ;
 sz = [size(x,1) size(x,2) size(x,3) size(x,4)] ;
-
 if numel(c) == sz(4)
   % one label per image
   c = reshape(c, [1 1 1 sz(4)]) ;
 end
 if size(c,1) == 1 & size(c,2) == 1
   c = repmat(c, [sz(1) sz(2)]) ;
+end
+percentErr = calcErrorPercent(x,c);
+Rate = calcRate(percentErr,prevpercent);
+if isDistLabel && doder
+    [c,I] = distLabel(c,Rate);
 end
 
 % one label per spatial location
@@ -69,39 +75,95 @@ c_ = 1 + ...
   (sz(1)*sz(2)*sz(3)) * floor(c_/(sz(1)*sz(2))) ;
 
 % compute softmaxloss
-percentErr = calcErrorPercent(x,c);
+
 xmax = max(x,[],3) ;
 ex = exp(bsxfun(@minus, x, xmax)) ;
 
 %n = sz(1)*sz(2) ;
-if nargin <= 3
+if ~doder
   t = xmax + log(sum(ex,3)) - reshape(x(c_), [sz(1:2) 1 sz(4)]) ;
   y = sum(sum(sum(mass .* t,1),2),4) ;
 else
-  if ~isempty(prevpercent)
-      diff = percentErr - prevpercent;
-      diff = 5*vl_nnrelu(diff);
-      if diff ~= 0
-          diff = diff/percentErr;
-      end
-  else
-      diff = 0;
-  end
+ Loss= xmax + log(sum(ex,3)) - reshape(x(c_), [sz(1:2) 1 sz(4)]) ;
   y = bsxfun(@rdivide, ex, sum(ex,3)) ;
   y(c_) = y(c_) - 1;
   y = bsxfun(@times, y, bsxfun(@times, mass, dzdy)) ;
-  y = randomNegate(y,diff);
+  if ~isDistLabel
+  y = randomNegate(y,Rate,c+1,Loss);
+  end
+  if ~isempty(prevpercent)
+     % percentErr = [];
+    end
+
 end
 end
+
+
+
+
+
+
+
 function y=  calcErrorPercent(x,c)
  [M,I] =   max(x,[],3);
- errs = (c~=I);
+ errs = ((c+1)~=I);
  y = sum(errs,4)/numel(c);
  
 end
-function y = randomNegate(x,p)
-Rands = gpuArray.rand(size(x));
+function y = randomNegate(x,p,c,Loss)
+Random = false;
+Sort = false;
+
+
+negNum = ceil(size(x,4)*p);
+
+[M,I] =   max(x,[],3);
+ errs = ((c+1)==I);
+ if Random
+Rands = gpuArray.rand(1,1,1,numel(find(errs)));
 Pos = Rands>p;
-Sign = 2.*Pos - 1;
-y = Sign.*x;
+ else
+     negNum = ceil(numel(find(errs))*min(p,1));
+     Rands = gpuArray.ones(1,1,1,numel(find(errs)));
+     
+     [~,i] = sort(Loss(errs));
+     [~,ip] = sort(i);
+     Rands(1:negNum) = 0;
+     if Sort
+     Rands = Rands(1,1,1,ip);
+     end
+     Pos = Rands;
+ end
+Sign = (2*Pos -1);
+x(:,:,:,errs) = bsxfun(@times,Sign,x(:,:,:,errs));
+ y = x;
+
+end
+function p = calcRate(percentErr,prevpercent)
+ if ~isempty(prevpercent)
+      diff = percentErr - prevpercent;
+      diff = vl_nnrelu(-diff);
+      if diff ~= 0
+          diff = diff/percentErr;
+      end
+ else
+      prevpercent = 0;
+      diff = 0;
+ end
+  p = percentErr;
+  p = p/((1-p).^(1/p))*(p<0.9);
+  
+end
+function [c,Disturbed] = distLabel(c,Rate)
+Disturbed = rand(size(c),'single');
+Disturbed = Disturbed<Rate;
+if sum(Disturbed(:)) ~=0 
+c_rand = generateLabels(size(c),10);
+c(Disturbed) = c_rand(Disturbed);
+end
+end
+function c = generateLabels(SZ,Max)
+c = rand(SZ)*Max;
+c(c == Max) = Max-1;
+c = floor(c);
 end
