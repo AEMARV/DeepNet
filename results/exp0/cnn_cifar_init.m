@@ -3,7 +3,7 @@ opts.networkType = 'simplenn' ;
 opts = vl_argparse(opts, varargin) ; 
  
 lr = [.1 2] ; 
-k =1; 
+k =2; 
 % Define network CIFAR10-quick 
 net.layers = {} ; 
  
@@ -67,7 +67,7 @@ net.layers{end+1} = struct('type', 'revloss') ;
  
 % Meta parameters 
 net.meta.inputSize = [32 32 3] ; 
-net.meta.trainOpts.learningRate = [ 0.05*ones(1,29) 0.005*ones(1,10) 0.0005*ones(1,10)] ; 
+net.meta.trainOpts.learningRate = [ 0.05*ones(1,30) 0.005*ones(1,10) 0.0005*ones(1,10)] ; 
 net.meta.trainOpts.weightDecay = 0.0001 ; 
 net.meta.trainOpts.batchSize = 100 ; 
 net.meta.trainOpts.numEpochs = numel(net.meta.trainOpts.learningRate) ; 

@@ -26,6 +26,9 @@ function [y,percentErr] = em_nnloss(x,c,prevpercent,dzdy)
 % progressively
 isDistLabel = false;
 doder = nargin>3;
+if doder
+    doder=doder;
+end
 if isa(x, 'gpuArray')
   switch classUnderlying(x) ;
     case 'single', cast = @(z) single(z) ;
@@ -50,7 +53,7 @@ end
 percentErr = calcErrorPercent(x,c);
 Rate = calcRate(percentErr,prevpercent);
 if isDistLabel && doder
-    [c,I] = distLabel(c,Rate);
+    [c,I] = distLabel(x,c,Rate);
 end
 
 % one label per spatial location
@@ -89,10 +92,12 @@ else
   y(c_) = y(c_) - 1;
   y = bsxfun(@times, y, bsxfun(@times, mass, dzdy)) ;
   if ~isDistLabel
-  y = randomNegate(y,Rate,c+1,Loss);
+  y = randomNegate(y,Rate,c+1,x,Loss);
+  else
+      y(:,:,:,I) = -y(:,:,:,I);
   end
   if ~isempty(prevpercent)
-     % percentErr = [];
+      percentErr = [];
     end
 
 end
@@ -106,11 +111,14 @@ end
 
 function y=  calcErrorPercent(x,c)
  [M,I] =   max(x,[],3);
- errs = ((c+1)~=I);
+ errs = ((c)~=I);
  y = sum(errs,4)/numel(c);
  
 end
-function y = randomNegate(x,p,c,Loss)
+
+
+
+function y = randomNegate(y,p,c,x,Loss)
 Random = false;
 Sort = false;
 
@@ -118,10 +126,10 @@ Sort = false;
 negNum = ceil(size(x,4)*p);
 
 [M,I] =   max(x,[],3);
- errs = ((c+1)==I);
+ errs = ((c)==I );
  if Random
 Rands = gpuArray.rand(1,1,1,numel(find(errs)));
-Pos = Rands>p;
+Pos = Rands>=p;
  else
      negNum = ceil(numel(find(errs))*min(p,1));
      Rands = gpuArray.ones(1,1,1,numel(find(errs)));
@@ -135,31 +143,50 @@ Pos = Rands>p;
      Pos = Rands;
  end
 Sign = (2*Pos -1);
-x(:,:,:,errs) = bsxfun(@times,Sign,x(:,:,:,errs));
- y = x;
+y(:,:,:,errs) = bsxfun(@times,Sign,y(:,:,:,errs));
+ %y = x;
 
 end
 function p = calcRate(percentErr,prevpercent)
  if ~isempty(prevpercent)
       diff = percentErr - prevpercent;
-      diff = vl_nnrelu(-diff);
+      diff = vl_nnrelu(diff);
       if diff ~= 0
-          diff = diff/percentErr;
+          diff = diff/(1-percentErr);
       end
  else
       prevpercent = 0;
       diff = 0;
  end
+ if prevpercent ==0
   p = percentErr;
-  p = p/((1-p).^(1/p))*(p<0.9);
+ % p = (p<0.9)*0.5;
+  p = (p/((1-p)));
+ else
+  
+  p = 0;
+  %p = 0;
+ end
   
 end
-function [c,Disturbed] = distLabel(c,Rate)
+function [c,Disturbed] = distLabel(x,c,Rate)
+Directed = true;
+[M,I] =   max(x,[],3);
+I = single(gather(I));
+Disturbed = (I~=c);
+if Directed
+    Disturbed_2 = rand(size(c),'single');
+    Disturbed_2 = Disturbed_2<Rate;
+    Disturbed = Disturbed & Disturbed_2;
+    c(Disturbed) = I(Disturbed);
+    
+else
 Disturbed = rand(size(c),'single');
 Disturbed = Disturbed<Rate;
 if sum(Disturbed(:)) ~=0 
 c_rand = generateLabels(size(c),10);
 c(Disturbed) = c_rand(Disturbed);
+end
 end
 end
 function c = generateLabels(SZ,Max)
