@@ -97,7 +97,7 @@ else
       y(:,:,:,I) = -y(:,:,:,I);
   end
   if ~isempty(prevpercent)
-      percentErr = [];
+     % percentErr = [];
     end
 
 end
@@ -120,30 +120,32 @@ end
 
 function y = randomNegate(y,p,c,x,Loss)
 Random = false;
-Sort = false;
+Sort = true;
 
 
 negNum = ceil(size(x,4)*p);
 
 [M,I] =   max(x,[],3);
- errs = ((c)==I );
+ corrects = ((c)==I );
+ errs = c~=I;
  if Random
-Rands = gpuArray.rand(1,1,1,numel(find(errs)));
+Rands = gpuArray.rand(1,1,1,numel(find(corrects)));
 Pos = Rands>=p;
  else
-     negNum = ceil(numel(find(errs))*min(p,1));
-     Rands = gpuArray.ones(1,1,1,numel(find(errs)));
+     negNum = floor(numel(find(corrects))*min(p,1));
+     Rands = gpuArray.ones(1,1,1,numel(find(corrects)));
      
-     [~,i] = sort(Loss(errs));
-     [~,ip] = sort(i);
      Rands(1:negNum) = 0;
      if Sort
+     
+     [~,i] = sort(-Loss(corrects));
+     [~,ip] = sort(i);
      Rands = Rands(1,1,1,ip);
      end
      Pos = Rands;
  end
 Sign = (2*Pos -1);
-y(:,:,:,errs) = bsxfun(@times,Sign,y(:,:,:,errs));
+y(:,:,:,corrects) = bsxfun(@times,Sign,y(:,:,:,corrects));
  %y = x;
 
 end
@@ -158,16 +160,26 @@ function p = calcRate(percentErr,prevpercent)
       prevpercent = 0;
       diff = 0;
  end
+ 
+ 
  if prevpercent ==0
   p = percentErr;
  % p = (p<0.9)*0.5;
-  p = (p/((1-p)));
+  
  else
   
-  p = 0;
+  %p = 0;
   %p = 0;
  end
-  
+ if rand(1)>0.5
+ % p = (percentErr^(1)/((1-percentErr)^(1)));
+% p = percentErr;
+p = 0 ;
+ else
+   p = percentErr;
+ end
+ 
+% p = percentErr;
 end
 function [c,Disturbed] = distLabel(x,c,Rate)
 Directed = true;

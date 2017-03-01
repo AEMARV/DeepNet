@@ -3,7 +3,7 @@ opts.networkType = 'simplenn' ;
 opts = vl_argparse(opts, varargin) ; 
  
 lr = [.1 2] ; 
-k =2; 
+k =1; 
 % Define network CIFAR10-quick 
 net.layers = {} ; 
  
