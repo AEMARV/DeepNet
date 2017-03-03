@@ -332,7 +332,7 @@ for i=1:n
       res(i+1).x = vl_nnsoftmaxloss(res(i).x, l.class) ;
       %% my loss
     case 'revloss'
-      res(i+1).x = em_nnloss(res(i).x, l.class,[]) ;
+      res(i+1).x = em_nnloss(l,res(i).x, l.class,[]) ;
 
     case 'relu'
       if l.leak > 0, leak = {'leak', l.leak} ; else leak = {} ; end
@@ -378,7 +378,8 @@ for i=1:n
       [res(i+1).x,res(i).aux] = em_nnbirelu(l,res(i).x);
       case 'avr'
           [res(i+1).x] = em_avr(res(i).x);
-      
+      case 'frelu'
+        [res(i+1).x] = em_nnfrelu(res(i).x,l.weights{1});
       
       
     case 'custom'
@@ -452,8 +453,7 @@ if doder
 
       case 'loss'
         res(i).dzdx = vl_nnloss(res(i).x, l.class, res(i+1).dzdx) ;
-      case 'revloss'
-        [res(i).dzdx,res(i+1).aux] = em_nnloss(res(i).x, l.class,res(i+1).aux, res(i+1).dzdx) ;
+      
       case 'softmaxloss'
         res(i).dzdx = vl_nnsoftmaxloss(res(i).x, l.class, res(i+1).dzdx) ;
 
@@ -504,9 +504,12 @@ if doder
       %% MY channels backward
       case 'birelu'
         res(i).dzdx = em_nnbirelu(l,res(i).x,res(i+1).dzdx,res(i).aux);
+      case 'frelu'
+        [res(i).dzdx,dzdw{1}] = em_nnfrelu(res(i).x,l.weights{1},res(i+1).dzdx,l.freeze);
       case 'avr'
         res(i).dzdx = em_avr(res(i).x,res(i+1).dzdx);
-        
+      case 'revloss'
+        [res(i).dzdx,res(i+1).aux] = em_nnloss(l,res(i).x, l.class,res(i+1).aux, res(i+1).dzdx) ;  
         
         
       case 'custom'
@@ -515,7 +518,7 @@ if doder
     end % layers
 
     switch l.type
-      case {'conv', 'convt', 'bnorm'}
+      case {'conv', 'convt', 'bnorm','frelu'}
         if ~opts.accumulate
           res(i).dzdw = dzdw ;
         else
