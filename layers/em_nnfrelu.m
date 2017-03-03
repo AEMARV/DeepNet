@@ -1,6 +1,7 @@
 function [y_dzdx,dzdw] = em_nnfrelu(x,w,dzdy,freeze)
 %% w is two columns with the same number of channels as x.
 % first column is the positive slope and the second is the negative slope
+w = sign(w).*min(abs(w),1);
 wpos = reshape(w(:,1),1,1,[],1);
 wneg = reshape(w(:,2),1,1,[],1);
 if nargin>2
@@ -19,7 +20,7 @@ if ~doder
 else
     y_dzdx = bsxfun(@times,wpos,vl_nnrelu(x,dzdy))+ bsxfun(@times,wneg,vl_nnrelu(-x,dzdy));
     dzdwpos = vl_nnrelu(x).*dzdy;
-    dzdwneg = vl_nnrelu(-x).*dzdy;
+    dzdwneg = -vl_nnrelu(-x).*dzdy;
     dzdwpos = sum(sum(sum(dzdwpos,4),2),1);
     dzdwneg = sum(sum(sum(dzdwneg,4),2),1);
     dzdw = w;

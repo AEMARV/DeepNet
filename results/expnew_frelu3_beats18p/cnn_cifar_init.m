@@ -15,12 +15,14 @@ net.layers{end+1} = struct('type', 'conv', ...
                            'stride', 1, ... 
                            'pad', 2) ;
 if isload
-    freluinit = loadweight(prenet,numel(net.layers)+1)/4;
-    j = 1;
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+    
 else
-    freluinit = ones(k*32,2, 'single')/10;
+    freluinit = ones(k*32,2, 'single');
 end
-net.layers{end+1} = struct('type', 'avr','weights', {{freluinit}},'freeze',freeze(j)) ; 
+j = 1;
+net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j)...
+                          ,'weightDecay',~freeze(j)) ; 
 net.layers{end+1} = struct('type', 'pool', ... 
                            'method', 'avg', ... 
                            'pool', [3 3], ... 
@@ -35,12 +37,13 @@ net.layers{end+1} = struct('type', 'conv', ...
                            'stride', 1, ... 
                            'pad', 2) ; 
 if isload
-    freluinit = loadweight(prenet,numel(net.layers)+1)/4;
-    j = j+1;
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+   
 else
-    freluinit = ones(k*32,2, 'single')/10;
+    freluinit = ones(k*32,2, 'single');
 end 
-net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j)) ; 
+ j = j+1;
+net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j),'weightDecay',~freeze(j)) ; 
 
 net.layers{end+1} = struct('type', 'pool', ... 
                            'method', 'avg', ... 
@@ -55,13 +58,13 @@ net.layers{end+1} = struct('type', 'conv', ...
                            'stride', 1, ... 
                            'pad', 2) ; 
 if isload
-    freluinit = loadweight(prenet,numel(net.layers)+1)/4;
-    j = j+1;
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+   
 else
-    freluinit = ones(k*64,2, 'single')/10;
+    freluinit = ones(k*64,2, 'single');
 end 
-
-net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j)) ; 
+ j = j+1;
+net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j),'weightDecay',~freeze(j)) ; 
 net.layers{end+1} = struct('type', 'pool', ... 
                            'method', 'avg', ... 
                            'pool', [3 3], ... 
@@ -75,18 +78,19 @@ net.layers{end+1} = struct('type', 'conv', ...
                            'stride', 1, ... 
                            'pad', 0) ; 
 if isload
-    freluinit = loadweight(prenet,numel(net.layers)+1)/4;
-    j = j+1;
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+    
 else
-    freluinit = ones(k*64,2, 'single')/10;
+    freluinit = ones(k*64,2, 'single');
 end 
-net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j)) ; 
+j = j+1;
+net.layers{end+1} = struct('type', 'frelu','weights', {{freluinit}},'freeze',freeze(j),'weightDecay',~freeze(j)) ; 
 
  
 % Block 5 
 net.layers{end+1} = struct('type', 'conv', ... 
                            'weights', {{0.05*randn(1,1,k*64,10, 'single')/k, zeros(1,10,'single')}}, ... 
-                           'learningRate', 1*lr, ... 
+                           'learningRate', .1*lr, ... 
                            'stride', 1, ... 
                            'pad', 0) ; 
  
@@ -117,4 +121,6 @@ end
 end
 function w = loadweight(net,i)
 w = net.layers{i}.weights{1};
+w= sign(w);
+%w = bsxfun(@rdivide,w,max(abs(w),[],2));
 end

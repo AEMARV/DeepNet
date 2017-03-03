@@ -380,6 +380,8 @@ for i=1:n
           [res(i+1).x] = em_avr(res(i).x);
       case 'frelu'
         [res(i+1).x] = em_nnfrelu(res(i).x,l.weights{1});
+       case 'fbrelu'
+        [res(i+1).x] = em_nnfbrelu(res(i).x,l.weights{1});
       
       
     case 'custom'
@@ -506,6 +508,8 @@ if doder
         res(i).dzdx = em_nnbirelu(l,res(i).x,res(i+1).dzdx,res(i).aux);
       case 'frelu'
         [res(i).dzdx,dzdw{1}] = em_nnfrelu(res(i).x,l.weights{1},res(i+1).dzdx,l.freeze);
+      case 'fbrelu'
+        [res(i).dzdx,dzdw{1}] = em_nnfbrelu(res(i).x,l.weights{1},res(i+1).dzdx,l.freeze);
       case 'avr'
         res(i).dzdx = em_avr(res(i).x,res(i+1).dzdx);
       case 'revloss'
@@ -518,7 +522,7 @@ if doder
     end % layers
 
     switch l.type
-      case {'conv', 'convt', 'bnorm','frelu'}
+      case {'conv', 'convt', 'bnorm','frelu','fbrelu'}
         if ~opts.accumulate
           res(i).dzdw = dzdw ;
         else
