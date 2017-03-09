@@ -1,126 +1,272 @@
-function net = cnn_cifar_init(prenet,varargin) 
-opts.networkType = 'simplenn' ; 
-opts = vl_argparse(opts, varargin) ; 
+function net = cnn_cifar_init(prenet,varargin)
+opts.networkType = 'simplenn' ;
+opts = vl_argparse(opts, varargin) ;
 isload = ~isempty(prenet);
-lr = [.1 2] ; 
-k =1; 
-% Define network CIFAR10-quick 
-net.layers = {} ; 
-freeze = [false,false,false,false];
- 
-% Block 1 
-net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{0.01*randn(5,5,3,k*32, 'single'), zeros(1, k*32, 'single')}}, ... 
-                           'learningRate', lr, ... 
-                           'stride', 1, ... 
-                           'pad', 2) ;
+loadconv = false;
+lr = [.1 2] ;
+k =4;
+% Define network CIFAR10-quick
+net.layers = {} ;
+freeze = [false,false,false,false,false,false,false];
+convfreeze = [false,false];
+convDecay = [~convfreeze(1),~convfreeze(2)];
+%% Block 1 ----------------------------------------------------------------------------------------------------------------------------
+if isload && loadconv
+    [convInit,convbias] = loadweight(prenet,numel(net.layers)+1);
+else
+    convInit = 100*eyeconv(5,5,3,k*32, 'single')/k;
+    convbias = zeros(1,k*32,'single');
+end
+net.layers{end+1} = struct('type', 'conv', ...
+    'weights', {{0.01*convInit, convbias}}, ...
+    'learningRate', lr, ...
+    'stride', 1, ...
+    'pad', 2,...
+    'freeze',convfreeze,...
+    'weightDecay',convDecay) ;
+% Activation 1 ******************************
+method = 'cart';
+activation = 'frelu';
 if isload
     freluinit = loadweight(prenet,numel(net.layers)+1);
     
 else
-    freluinit = ones(k*32,2, 'single');
+    freluinit = freluInit(k*32,2, 'single',method);
 end
 j = 1;
-net.layers{end+1} = struct('type', 'fbrelu','weights', {{freluinit}},'freeze',freeze(j)...
-                          ,'weightDecay',~freeze(j)) ; 
-net.layers{end+1} = struct('type', 'pool', ... 
-                           'method', 'avg', ... 
-                           'pool', [3 3], ... 
-                           'stride', 2, ... 
-                           'pad', [0 1 0 1]) ; 
 
- 
-% Block 2 
-net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{0.05*randn(5,5,2*k*32,k*32, 'single')/2, zeros(1,k*32,'single')}}, ... 
-                           'learningRate', lr, ... 
-                           'stride', 1, ... 
-                           'pad', 2) ; 
-if isload
-    freluinit = loadweight(prenet,numel(net.layers)+1);
-   
-else
-    freluinit = ones(k*32,2, 'single');
-end 
- j = j+1;
-net.layers{end+1} = struct('type', 'fbrelu','weights', {{freluinit}},'freeze',freeze(j),'weightDecay',~freeze(j)) ; 
+net.layers{end+1} = struct('type', activation,...
+    'weights',{{freluinit}},...
+    'freeze',freeze(j),...
+    'weightDecay',~freeze(j),...
+    'method',method) ;
 
-net.layers{end+1} = struct('type', 'pool', ... 
-                           'method', 'avg', ... 
-                           'pool', [3 3], ... 
-                           'stride', 2, ... 
-                           'pad', [0 1 0 1]) ; % Emulate caffe 
- 
-% Block 3 
-net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{0.05*randn(5,5,2*k*32,k*64, 'single')/2, zeros(1,k*64,'single')}}, ... 
-                           'learningRate', lr, ... 
-                           'stride', 1, ... 
-                           'pad', 2) ; 
-if isload
-    freluinit = loadweight(prenet,numel(net.layers)+1);
-   
+net.layers{end+1} = struct('type', 'pool', ...
+    'method', 'avg', ...
+    'pool', [3 3], ...
+    'stride', 2, ...
+    'pad', [0 1 0 1]) ;
+
+%% Block 2 ----------------------------------------------------------------------------------------------------------------------------
+if isload && loadconv
+    [convInit,convbias] = loadweight(prenet,numel(net.layers)+1);
 else
-    freluinit = ones(k*64,2, 'single');
-end 
- j = j+1;
-net.layers{end+1} = struct('type', 'fbrelu','weights', {{freluinit}},'freeze',freeze(j),'weightDecay',~freeze(j)) ; 
-net.layers{end+1} = struct('type', 'pool', ... 
-                           'method', 'avg', ... 
-                           'pool', [3 3], ... 
-                           'stride', 2, ... 
-                           'pad', [0 1 0 1]) ; % Emulate caffe 
- 
-% Block 4 
-net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{0.05*randn(4,4,2*k*64,k*64, 'single')/2, zeros(1,k*64,'single')}}, ... 
-                           'learningRate', lr, ... 
-                           'stride', 1, ... 
-                           'pad', 0) ; 
+    convInit = 20*eyeconv(5,5,k*32,k*32, 'single');
+    convbias = zeros(1,k*32,'single');
+end
+
+
+net.layers{end+1} = struct('type', 'conv', ...
+    'weights', {{0.05*convInit/k, convbias}}, ...
+    'learningRate', lr, ...
+    'stride', 1, ...
+    'pad', 2,...
+    'freeze',convfreeze,...
+    'weightDecay',convDecay) ;
+% Activation 2 ******************************
+method = 'cart';
+activation = 'frelu';
 if isload
     freluinit = loadweight(prenet,numel(net.layers)+1);
     
 else
-    freluinit = ones(k*64,2, 'single');
-end 
-j = j+1;
-net.layers{end+1} = struct('type', 'fbrelu','weights', {{freluinit}},'freeze',freeze(j),'weightDecay',~freeze(j)) ; 
-
- 
-% Block 5 
-net.layers{end+1} = struct('type', 'conv', ... 
-                           'weights', {{0.05*randn(1,1,2*k*64,10, 'single')/2, zeros(1,10,'single')}}, ... 
-                           'learningRate', .1*lr, ... 
-                           'stride', 1, ... 
-                           'pad', 0) ; 
- 
-% Loss layer 
-net.layers{end+1} = struct('type', 'softmaxloss') ; 
- 
-% Meta parameters 
-net.meta.inputSize = [32 32 3] ; 
-net.meta.trainOpts.learningRate = [ 0.05*ones(1,30) 0.005*ones(1,10) 0.0005*ones(1,5)] ; 
-net.meta.trainOpts.weightDecay = 0.0001 ; 
-net.meta.trainOpts.batchSize = 100 ; 
-net.meta.trainOpts.numEpochs = numel(net.meta.trainOpts.learningRate) ; 
- 
-% Fill in default values 
-net = vl_simplenn_tidy(net) ; 
- 
-% Switch to DagNN if requested 
-switch lower(opts.networkType) 
-  case 'simplenn' 
-    % done 
-  case 'dagnn' 
-    net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true) ; 
-    net.addLayer('error', dagnn.Loss('loss', 'classerror'), ... 
-             {'prediction','label'}, 'error') ; 
-  otherwise 
-    assert(false) ; 
-end 
+    freluinit = freluInit(k*32,2, 'single',method);
 end
-function w = loadweight(net,i)
-w = net.layers{i}.weights{1};
-w= sign(w);
+j = j+1;
+net.layers{end+1} = struct('type', activation,...
+    'weights', {{freluinit}},...
+    'freeze',freeze(j),...
+    'weightDecay',~freeze(j),...
+    'method',method) ;
+
+
+
+net.layers{end+1} = struct('type', 'pool', ...
+    'method', 'avg', ...
+    'pool', [3 3], ...
+    'stride', 2, ...
+    'pad', [0 1 0 1]) ; % Emulate caffe
+%% Block 3 ----------------------------------------------------------------------------------------------------------------------------
+if isload && loadconv
+    [convInit,convbias] = loadweight(prenet,numel(net.layers)+1);
+else
+    convInit = 20*eyeconv(5,5,k*32,k*64, 'single');
+    convbias = zeros(1,k*64,'single');
+end
+
+net.layers{end+1} = struct('type', 'conv', ...
+    'weights', {{0.05*convInit/k, convbias}}, ...
+    'learningRate', lr, ...
+    'stride', 1, ...
+    'pad', 2,...
+    'freeze',convfreeze,...
+    'weightDecay',convDecay) ;
+
+% Activation 3 ******************************
+method = 'cart';
+activation = 'fbrelu';
+if isload
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+    
+else
+    freluinit = freluInit(k*64,2, 'single',method);
+end
+j = j+1;
+net.layers{end+1} = struct('type', activation,...
+    'weights', {{freluinit}}...
+    ,'freeze',freeze(j)...
+    ,'weightDecay',~freeze(j)...
+    ,'method',method) ;
+
+
+net.layers{end+1} = struct('type', 'pool', ...
+    'method', 'avg', ...
+    'pool', [3 3], ...
+    'stride', 2, ...
+    'pad', [0 1 0 1]) ; % Emulate caffe
+
+%% Block 4
+if isload && loadconv
+    [convInit,convbias] = loadweight(prenet,numel(net.layers)+1);
+else
+    convInit = 20*eyeconv(4,4,k*64,k*64, 'single');
+    convbias = zeros(1,k*64,'single');
+end
+net.layers{end+1} = struct('type', 'conv', ...
+    'weights', {{0.05*convInit/k,convbias}}, ...
+    'learningRate', lr, ...
+    'stride', 1, ...
+    'pad', 0,...
+    'freeze',convfreeze,...
+    'weightDecay',convDecay) ;
+% Activation 4 ******************************
+method = 'cart';
+activation= 'relu';
+if isload
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+    
+else
+    freluinit = freluInit(k*64,2, 'single',method);
+end
+j = j+1;
+net.layers{end+1} = struct('type', activation...
+    ,'weights', {{freluinit}}...
+    ,'freeze',freeze(j),...
+    'weightDecay',~freeze(j)...
+    ,'method',method) ;
+
+
+%% Block 5
+if isload && loadconv
+    [convInit,convbias] = loadweight(prenet,numel(net.layers)+1);
+else
+    convInit = 20*eyeconv(1,1,k*64,10, 'single');
+    convbias = zeros(1,10,'single');
+end
+net.layers{end+1} = struct('type', 'conv', ...
+    'weights', {{0.05*convInit/k, convbias}}, ...
+    'learningRate', .1*lr, ...
+    'stride', 1, ...
+    'pad', 0,...
+    'freeze',convfreeze,...
+    'weightDecay',convDecay) ;
+% Activation 5 ******************************
+method = 'cart';
+activation = 'frelu';
+if isload
+    freluinit = loadweight(prenet,numel(net.layers)+1);
+    
+else
+    freluinit = freluInit(10,2, 'single',[method]);
+end
+j = j+1;
+
+if ~isempty(activation)
+    net.layers{end+1} = struct('type', activation,...
+        'weights', {{freluinit}}...
+        ,'freeze',freeze(j)...
+        ,'weightDecay',~freeze(j)...
+        ,'method',method) ;
+end
+
+
+% Loss layer
+net.layers{end+1} = struct('type', 'softmaxloss') ;
+
+% Meta parameters
+net.meta.inputSize = [32 32 3] ;
+net.meta.trainOpts.learningRate = [ 0.05*ones(1,70) 0.005*ones(1,20) 0.0005*ones(1,10)] ;
+net.meta.trainOpts.weightDecay = 0.0001 ;
+net.meta.trainOpts.batchSize = 100 ;
+net.meta.trainOpts.numEpochs = numel(net.meta.trainOpts.learningRate) ;
+
+% Fill in default values
+net = vl_simplenn_tidy(net) ;
+
+% Switch to DagNN if requested
+switch lower(opts.networkType)
+    case 'simplenn'
+        % done
+    case 'dagnn'
+        net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true) ;
+        net.addLayer('error', dagnn.Loss('loss', 'classerror'), ...
+            {'prediction','label'}, 'error') ;
+    otherwise
+        assert(false) ;
+end
+end
+function [w,w2] = loadweight(net,i)
+w=0;
+w2=[];
+switch net.layers{i}.type
+    case 'conv'
+        
+        w = net.layers{i}.weights{1};
+        w2 = net.layers{i}.weights{2};
+        %         ws = sign(w);
+        %         w = abs(eyeconv(size(w),'single')).*ws;
+    case 'frelu'
+        w = net.layers{i}.weights{1};
+        w2 = [];
+        
+    case 'fbrelu'
+end
 %w = bsxfun(@rdivide,w,max(abs(w),[],2));
+end
+function w = freluInit(k,dumb1,dumb2,method,activation)
+if nargin<4
+    method = 'polar';
+end
+switch method
+    case 'polar2'
+        w= rand(k,1)*2*pi;
+    case 'polar1'
+        w= rand(k,1)*2*pi;
+    case 'polar1f'
+        w= (rand(k,1)*pi/2);
+        Rand = rand(size(w));
+        pole = 2*(Rand>0.5) -1;
+        w = w + pole*(pi/2);
+    case 'cart'
+        switch activation
+            case 'fbrelu'
+                w= (2*rand(k,4,'single')- 1)/2;
+            case 'frelu'
+                w= (2*rand(k,4,'single')- 1)/2;
+        end
+    case 'cartrot'
+        % cartesian and rotated
+        w= (2*rand(k,2,'single')- 1);
+    case 'cartconst'
+        w= (2*rand(k,2,'single')- 1);
+    case 'ones'
+        w= ones(k,1,'single');
+        
+    case 'halfhalf'
+        w= ones(k,2,'single')/2;
+    case 'cartl1'
+        w = rand(k,2);
+        w(:,2) = w(:,2)*2*pi;
+        
+end
 end

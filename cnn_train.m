@@ -334,7 +334,10 @@ for t=1:params.batchSize:numel(subset)
     if ~isempty(parserv), parserv.sync() ; end
     [net, res, state] = accumulateGradients(net, res, state, params, batchSize, parserv) ;
   end
-
+  if strcmp(mode,'train')
+%  visulaizeActivationParam(net);
+%  drawnow;
+  end
   % get statistics
   time = toc(start) + adjustTime ;
   batchTime = time - stats.time ;

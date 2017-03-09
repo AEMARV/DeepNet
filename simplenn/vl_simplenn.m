@@ -379,9 +379,9 @@ for i=1:n
       case 'avr'
           [res(i+1).x] = em_avr(res(i).x);
       case 'frelu'
-        [res(i+1).x] = em_nnfrelu(res(i).x,l.weights{1});
+        [res(i+1).x] = em_nnfrelu(res(i).x,l.weights{1},l.method);
        case 'fbrelu'
-        [res(i+1).x] = em_nnfbrelu(res(i).x,l.weights{1});
+        [res(i+1).x] = em_nnfbrelu(res(i).x,l.weights{1},l.method);
       
       
     case 'custom'
@@ -509,9 +509,9 @@ if doder
       case 'birelu'
         res(i).dzdx = em_nnbirelu(l,res(i).x,res(i+1).dzdx,res(i).aux);
       case 'frelu'
-        [res(i).dzdx,dzdw{1}] = em_nnfrelu(res(i).x,l.weights{1},res(i+1).dzdx,l.freeze);
+        [res(i).dzdx,dzdw{1}] = em_nnfrelu(res(i).x,l.weights{1},l.method,res(i+1).dzdx,l.freeze);
       case 'fbrelu'
-        [res(i).dzdx,dzdw{1}] = em_nnfbrelu(res(i).x,l.weights{1},res(i+1).dzdx,l.freeze);
+        [res(i).dzdx,dzdw{1}] = em_nnfbrelu(res(i).x,l.weights{1},l.method,res(i+1).dzdx,l.freeze);
       case 'avr'
         res(i).dzdx = em_avr(res(i).x,res(i+1).dzdx);
       case 'revloss'
