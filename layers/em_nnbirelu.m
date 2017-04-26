@@ -29,7 +29,7 @@ if nargin<3
             aux = [];
         else
         xcat = cat(3,x,-x);
-        y_dzdx = vl_nnrelu(xcat);
+        y_dzdx = vl_nnrelu(xcat)/2;
         aux = [];
         end
     end
@@ -47,7 +47,7 @@ else
         else
             xcat = cat(3,x,-x);
             y_dzdx = vl_nnrelu(xcat,dzdy);
-            y_dzdx = y_dzdx(:,:,1:end/2,:) - y_dzdx(:,:,(end/2)+1:end,:);
+            y_dzdx = y_dzdx(:,:,1:end/2,:)/2 - y_dzdx(:,:,(end/2)+1:end,:)/2;
         end
     end
     

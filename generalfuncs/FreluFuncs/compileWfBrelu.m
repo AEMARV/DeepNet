@@ -8,6 +8,8 @@ end
 if ~doder
     % forward
     switch method
+        case 'cart'
+            wc_dzdw= w;
         case 'polar2'
             if size(w,2)>1
                 warning('theta has more dimensions');
@@ -21,8 +23,8 @@ if ~doder
                 warning('theta has more dimensions');
             end
             theta = w(:,1);
-            wp = l1phase2cart(theta);
-            wn = l1phase2cart(theta + phasediff);
+            wp = l1phase2cart(theta)/2;
+            wn = l1phase2cart(theta + phasediff)/2;
             wc_dzdw = cat(2,wp,wn);
         case 'cartrot'
             %wp = sign(w).*min(abs(w),1);
@@ -43,7 +45,8 @@ else
         dzdwp = dzdwc(:,1:2);
         dzdwn = dzdwc(:,3:4);
     switch method
-        
+        case 'cart'
+            wc_dzdw= dzdwc;
         case 'polar2'
             theta = w(:,1);
             dzdw_P_dtheta = l2phase2cart(theta,dzdwp);
@@ -51,8 +54,8 @@ else
             wc_dzdw = dzdw_N_dtheta + dzdw_P_dtheta;
         case 'polar1'
             theta = w(:,1);
-            dzdw_P_dtheta = l1phase2cart(theta,dzdwp);
-            dzdw_N_dtheta = l1phase2cart(theta+phasediff,dzdwn);
+            dzdw_P_dtheta = l1phase2cart(theta,dzdwp/2);
+            dzdw_N_dtheta = l1phase2cart(theta+phasediff,dzdwn/2);
             wc_dzdw = dzdw_N_dtheta + dzdw_P_dtheta;
         case 'cartrot'
             %w = sign(w).*min(abs(w),1);

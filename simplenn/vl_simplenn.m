@@ -378,12 +378,17 @@ for i=1:n
       [res(i+1).x,res(i).aux] = em_nnbirelu(l,res(i).x);
       case 'avr'
           [res(i+1).x] = em_avr(res(i).x);
+      case 'biavr'
+          [res(i+1).x,res(i+1).aux] = em_biavr(res(i).x);
       case 'frelu'
         [res(i+1).x] = em_nnfrelu(res(i).x,l.weights{1},l.method);
        case 'fbrelu'
         [res(i+1).x] = em_nnfbrelu(res(i).x,l.weights{1},l.method);
-      
-      
+      case 'median'
+         
+        [res(i+1).x,~,res(i).aux] = em_nnmedian(res(i).x,l.weights{1},l);
+      case 'medianfeat'
+        [res(i+1).x] = em_nnmedianfeature(res(i).x);
     case 'custom'
       res(i+1) = l.forward(l, res(i), res(i+1)) ;
 
@@ -514,9 +519,13 @@ if doder
         [res(i).dzdx,dzdw{1}] = em_nnfbrelu(res(i).x,l.weights{1},l.method,res(i+1).dzdx,l.freeze);
       case 'avr'
         res(i).dzdx = em_avr(res(i).x,res(i+1).dzdx);
+      case 'median'
+        [res(i).dzdx,dzdw{1},~] = em_nnmedian(res(i).x,l.weights{1},l,res(i+1).dzdx,res(i).aux);
+      case 'biavr'
+        res(i).dzdx = em_biavr(res(i).x,res(i+1).dzdx,res(i+1).aux);
       case 'revloss'
         [res(i).dzdx,res(i+1).aux] = em_nnloss(l,res(i).x, l.class,res(i+1).aux, res(i+1).dzdx) ;  
-        
+       case 'medianfeat'
         
       case 'custom'
         res(i) = l.backward(l, res(i), res(i+1)) ;
@@ -524,7 +533,7 @@ if doder
     end % layers
 
     switch l.type
-      case {'conv', 'convt', 'bnorm','frelu','fbrelu'}
+      case {'conv', 'convt', 'bnorm','frelu','fbrelu','median'}
         if ~opts.accumulate
           res(i).dzdw = dzdw ;
         else
